@@ -1,29 +1,17 @@
-import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import kotlin.random.Random
 
 @Composable
 fun TicTacToeApp() {
@@ -31,60 +19,117 @@ fun TicTacToeApp() {
     var currentPlayer by remember { mutableStateOf("X") }
     var board by remember { mutableStateOf(generateEmptyBoard(boardSize)) }
     var winner by remember { mutableStateOf<String?>(null) }
+    var isGameStarted by remember { mutableStateOf(false) }
+    var player1Name by remember { mutableStateOf(TextFieldValue("")) }
+    var player2Name by remember { mutableStateOf(TextFieldValue("")) }
+    var startingPlayer by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Selector de tamaño del tablero
-        BoardSizeSelector(boardSize) {
-            boardSize = it
-            board = generateEmptyBoard(boardSize)
-            winner = null // Reiniciar el ganador cuando se cambia el tamaño del tablero
-            currentPlayer = "X" // Reiniciar el jugador actual
-        }
+    if (!isGameStarted) {
+        // Pantalla de inicio para ingresar los nombres de los jugadores y seleccionar el tamaño del tablero
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Tic Tac Toe", fontSize = 32.sp, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Tablero del Tic-Tac-Toe
-        TicTacToeBoard(board, boardSize, currentPlayer) { row, col ->
-            if (board[row][col] == "" && winner == null) {
-                board[row][col] = currentPlayer
-                if (checkForWin(board, currentPlayer)) {
-                    winner = currentPlayer // Actualiza el ganador
-                } else {
-                    currentPlayer = if (currentPlayer == "X") "O" else "X"
+            // Campo de texto para el nombre del jugador 1
+            OutlinedTextField(
+                value = player1Name,
+                onValueChange = { player1Name = it },
+                label = { Text("Nombre del Jugador 1 (X)") } // Se asocia con "X"
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Campo de texto para el nombre del jugador 2
+            OutlinedTextField(
+                value = player2Name,
+                onValueChange = { player2Name = it },
+                label = { Text("Nombre del Jugador 2 (O)") } // Se asocia con "O"
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Selector de tamaño del tablero
+            BoardSizeSelector(boardSize) {
+                boardSize = it
+                board = generateEmptyBoard(boardSize)
+                winner = null
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botón para empezar el juego
+            Button(onClick = {
+                if (player1Name.text.isNotEmpty() && player2Name.text.isNotEmpty()) {
+                    // Selección aleatoria de quién inicia
+                    startingPlayer = if (Random.nextBoolean()) "X" else "O"
+                    currentPlayer = startingPlayer
+                    isGameStarted = true
                 }
+            }) {
+                Text("Iniciar Juego")
             }
         }
+    } else {
+        // Pantalla del juego
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Mostrar a qué jugador le toca (X o O, pero mostrando el nombre del jugador)
+            val currentPlayerName = if (currentPlayer == "X") player1Name.text else player2Name.text
 
-        // Mostrar mensaje del ganador si existe
-        if (winner != null) {
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "¡Jugador $winner ha ganado!",
+                text = "Turno de: $currentPlayerName",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
-        }
 
-        // Mostrar botón de reinicio cuando hay un ganador
-        if (winner != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                board = generateEmptyBoard(boardSize)
-                winner = null
-                currentPlayer = "X"
-            }) {
-                Text(text = "Reiniciar")
+
+            // Tablero del Tic-Tac-Toe
+            TicTacToeBoard(board, boardSize, currentPlayer) { row, col ->
+                if (board[row][col] == "" && winner == null) {
+                    board[row][col] = currentPlayer
+                    if (checkForWin(board, currentPlayer)) {
+                        winner = currentPlayer
+                    } else {
+                        currentPlayer = if (currentPlayer == "X") "O" else "X"
+                    }
+                }
+            }
+
+            // Mostrar mensaje del ganador si existe
+            if (winner != null) {
+                val winnerName = if (winner == "X") player1Name.text else player2Name.text
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "¡$winnerName ha ganado!",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Mostrar botón de reinicio cuando hay un ganador
+            if (winner != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    board = generateEmptyBoard(boardSize)
+                    winner = null
+                    currentPlayer = startingPlayer
+                }) {
+                    Text(text = "Reiniciar")
+                }
             }
         }
     }
 }
 
-
-// Composable para seleccionar el tamaño del tablero
 @Composable
 fun BoardSizeSelector(boardSize: Int, onSizeChange: (Int) -> Unit) {
     val sizes = listOf(3, 4, 5)
@@ -101,7 +146,6 @@ fun BoardSizeSelector(boardSize: Int, onSizeChange: (Int) -> Unit) {
     }
 }
 
-// Composable para el tablero
 @Composable
 fun TicTacToeBoard(
     board: Array<Array<String>>,
@@ -120,8 +164,6 @@ fun TicTacToeBoard(
     }
 }
 
-
-// Composable para las celdas del tablero
 @Composable
 fun TicTacToeCell(value: String, onClick: () -> Unit) {
     Button(
@@ -139,12 +181,10 @@ fun TicTacToeCell(value: String, onClick: () -> Unit) {
     }
 }
 
-// Función para generar un tablero vacío
 fun generateEmptyBoard(size: Int): Array<Array<String>> {
     return Array(size) { Array(size) { "" } }
 }
 
-// Lógica para verificar si hay un ganador con 3 en línea
 fun checkForWin(board: Array<Array<String>>, currentPlayer: String): Boolean {
     val size = board.size
     val winCondition = 3
@@ -192,4 +232,13 @@ fun checkForWin(board: Array<Array<String>>, currentPlayer: String): Boolean {
 @Composable
 fun PreviewTicTacToeApp() {
     TicTacToeApp()
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            TicTacToeApp()
+        }
+    }
 }
