@@ -125,6 +125,16 @@ fun TicTacToeApp() {
                 }) {
                     Text(text = "Reiniciar")
                 }
+                // Botón para regresar al menú principal
+                Button(onClick = {
+                    isGameStarted = false
+                    player1Name = TextFieldValue("")
+                    player2Name = TextFieldValue("")
+                    board = generateEmptyBoard(boardSize)
+                    winner = null
+                }) {
+                    Text(text = "Menú Principal")
+                }
             }
         }
     }
